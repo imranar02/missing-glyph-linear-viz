@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incomplete Data Missing Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav-links a:hover {
+            background: #764ba2;
+        }
+        .content h2 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .content p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Missing Glyph Data Visualization</h1>
+        <p class="tagline">The buttons below direct you to the MissiG visualization for each dataset involved in this project:-</p>
+        
+        <div class="nav-links">
+            <a href="missiG\missiG-small.html">Small</a>
+            <a href="missiG\missiG-medium.html">Medium</a>
+            <a href="missiG\missiG-large.html">Large</a>
+        </div>
+
+        <div class="content">
+            <h2>About This Project</h2>
+            <p>
+                This data visualization project aims to <b>identify the effectiveness of Missing Glyph Visualization tool, 
+                specifically through its linear layout on representing the missingness patterns on multivariate datasets
+                with different sizes (number of variables)</b>. I highly suggest you read the README documentation first before
+                accessing the visualization tool to make things more clear. 
+            </p>
+            
+            <h2>Features</h2>
+            <p>
+                Each element and feature in the visualisation is explained in my README documentation. In case you forgot 
+                about them, there are several things that you must know before you start exploring: -
+            </p>
+            <ul style="margin-left: 20px; margin-bottom: 15px;">
+                <li>Missing Data Pattern Analysis & Statistical Insight</li>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>Each <b>rectangular container</b> represents a single variable in a dataset with its missingness patterns.</li>
+                    <li><b>Amount Missing (AM)</b> is represented by the <b>blue bar</b> (located on the right side of the container)</li>
+                    <li><b>Joint Missingness (JM)</b> is represented by the <b>red bar</b> (located on the right side of the container) and
+                        the <b>red arch</b> (connected between containers that share missing values with the selected variable)</li>
+                    <li><b>Conditional Missingness (CM)</b> is represented by the distribution of recorded values <b>(red histogram)</b>
+                        that is located on the left side of the container. Provided that the selected variable contain missing
+                        values, the missing values in it are considered as conditional if its corresponds to clear patterns 
+                        of distributions on the recorderd values (red histogram) for other variables.</li>
+                    <li><b>Gray histogram</b> (positioned on the left side of the container) represents all the <b>recorded
+                        values</b> of the variable.</li>
+                </ul>
+                <li>Interactive Data Visualization & Easy-to-use Interface</li>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li><b>Zooming in and zooming out</b> using your laptop’s touchpad or your somputer's mouse.</li>
+                    <li><b>Hovering</b> over a bar, a histogram bar and an arch , will reveal a <b>tooltip</b> that show its values
+                        and extra information like category and range.</li>
+                    <li><b>Resetting</b> the visualization to its default state can be done by clicking on the <b>'R' key</b>.</li>
+                </ul>
+            </ul>
+            <h2>Getting Started</h2>
+            <p>
+                Click on any of the datasets <b>(Small, Medium & Large)</b> to begin exploring the MissiG! 
+            </p>
+        </div>
+    </div>
+</body>
+</html>

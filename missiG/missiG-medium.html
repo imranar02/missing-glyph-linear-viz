@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MissiG for Medium Size Dataset</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-y: hidden;
+      overflow-x: hidden;
+      height: 100%;
+      width: 100%;
+    }
+    body {
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      margin-left: 30px;
+    }
+    svg {
+      border: 1px solid #ccc;
+    }
+    #tooltip {
+      position: absolute;
+      visibility: hidden;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Title for the dataset -->
+<h2>Sleep Health and Lifestyle</h2>
+
+<!-- SVG Container for the Visualization -->
+<svg id="missig-chart" width="100%" height="100%" viewBox="0 0 1920 1000" preserveAspectRatio="xMidYMid meet"></svg>
+
+<!-- Tooltip for interactive feedback -->
+<div id="tooltip"></div>
+
+<script>
+
+// 1. Load Data and Initialize SVG
+d3.json("data/Sleep_health_and_lifestyle_dataset_with_mnar.json").then(data => {
+
+    const svg = d3.select("#missig-chart");
+    const tooltip = d3.select("#tooltip");
+
+    //  zooming & panning layers
+    const zoomLayer = svg.append("g").attr("id", "zoom-layer");
+    const container = zoomLayer.append("g").attr("id", "main-group");
+
+    // 2. Zooming and Panning
+    const zoom = d3.zoom()
+        .scaleExtent([0.2, 5])
+        .on("zoom", (event) => {
+            zoomLayer.attr("transform", event.transform);
+        });
+
+    svg.call(zoom);
+
+    // 3. Layout Configuration
+    const rectWidth = 200, rectHeight = 300, padding = 15;
+    const maxBlockPerRow = 22;
+
+    // Total Number of Records(rows)
+    let totalRows;
+    if (data[0].recorded) {
+      totalRows = data[0].recorded.length + data[0].missing;
+    } else if (data[0].categories) {
+      const recordedCount = Object.values(data[0].categories).reduce((a, b) => a + b, 0);
+      totalRows = recordedCount + data[0].missing;
+    } else {
+      totalRows = data[0].missing;
+    }
+
+    const n = data.length;
+    const screenWidth = 1920;
+    const blocksPerRow = Math.min(n, maxBlockPerRow);
+    const requiredWidth = blocksPerRow * (rectWidth + padding);
+    const scaleFactor = Math.min(1, screenWidth / requiredWidth);
+    container.attr("transform", `scale(${scaleFactor})`);
+
+    // 4. Creating Each Feature Block
+    data.forEach((feature, i) => {
+        const col = i % maxBlockPerRow;
+        const row = Math.floor(i / maxBlockPerRow);
+        const x = padding + col * (rectWidth + padding);
+        const y = 80 + row * (rectHeight + 200);
+        feature._layout = { x, y };
+
+        // Feature Label
+        container.append("text")
+            .attr("x", x + rectWidth / 2)
+            .attr("y", y - 10)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "14px")
+            .attr("font-weight", "bold")
+            .text(feature.name || "Name of Feature");
+
+        // Feature Box Group
+        const g = container.append("g")
+            .attr("transform", `translate(${x}, ${y})`)
+            .attr("id", `feature-${i}`)
+            .attr("class", "feature-block")
+            .on("click", () => handleSelectFeatureJM(i, feature));
+
+        // Feature Outline and Divider Line
+        g.append("rect")
+                .attr("width", rectWidth)
+                .attr("height", rectHeight)
+                .attr("fill", "white")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1);
+        g.append("line")
+                .attr("x1", rectWidth / 2)
+                .attr("x2", rectWidth / 2)
+                .attr("y1", 0).attr("y2", rectHeight)
+                .attr("stroke", "black")
+                .attr("stroke-width", 2);
+
+        // Missing Data Bar (Right Half)
+        const missingHeight = rectHeight * (feature.missing / totalRows);
+        g.append("rect")
+            .attr("class", "missing-bar")
+            .attr("x", rectWidth / 2)
+            .attr("y", rectHeight - missingHeight)
+            .attr("width", rectWidth / 2)
+            .attr("height", missingHeight)
+            .attr("fill", "steelblue")
+            .on("mouseover", () => tooltip.style("visibility", "visible").html(`<strong>Missing:</strong> ${feature.missing}`))
+            .on("mousemove", (event) => tooltip.style("top", (event.clientY + 15) + "px").style("left", (event.clientX) + "px"))
+            .on("mouseout", () => tooltip.style("visibility", "hidden"));
+
+        // Creating Histogram: Numerical or Categorical
+        if (feature.type === "numerical") {
+            renderNumericalHistogram(g, feature);
+        } else {
+            renderCategoricalHistogram(g, feature);
+        }
+    });
+
+    // 5. Functions for Drawing Histogram for Numerical/Categorical Features
+    function renderNumericalHistogram(g, feature) {
+        const values = feature.recorded;
+        const [minValue, maxValue] = d3.extent(values);
+        const binCount = Math.min(10, new Set(values).size);
+        const thresholds = d3.range(minValue, maxValue, (maxValue - minValue) / binCount);
+        feature.thresholds = thresholds;
+        feature.domain = [minValue, maxValue];
+
+        const bins = d3.bin().domain([minValue, maxValue]).thresholds(thresholds)(values);
+        const barHeight = rectHeight / bins.length;
+        const maxCount = d3.max(bins, d => d.length);
+        feature.grayMaxCount = maxCount;
+
+        const scaleX = d3.scaleLinear().domain([0, maxCount]).range([0, rectWidth / 2 - 1]);
+
+        g.selectAll(".hist-bar")
+            .data(bins)
+            .enter()
+            .append("rect")
+            .attr("x", d => rectWidth / 2 - scaleX(d.length))
+            .attr("y", (d, i) => rectHeight - (i + 1) * barHeight)
+            .attr("width", d => scaleX(d.length))
+            .attr("height", barHeight)
+            .attr("fill", "#ccc")
+            .attr("stroke", "#000")
+            .attr("stroke-width", 0.5)
+            .on("mouseover", (event, d) => {
+                tooltip.style("visibility", "visible").html(`<strong>Range:</strong> ${d.x0.toFixed(2)}–${d.x1.toFixed(2)}<br><strong>Count:</strong> ${d.length}`);
+            })
+            .on("mousemove", (event) => tooltip.style("top", (event.clientY + 15) + "px").style("left", (event.clientX) + "px"))
+            .on("mouseout", () => tooltip.style("visibility", "hidden"));
+    }
+
+    function renderCategoricalHistogram(g, feature) {
+        const categories = Object.keys(feature.categories || {});
+        const counts = Object.values(feature.categories || {});
+        const yScale = d3.scaleBand().domain(categories).range([0, rectHeight]).padding(0.15);
+        const barHeight = yScale.bandwidth();
+        const maxCount = Math.max(...counts);
+        feature.grayMaxCount = maxCount;
+        const scaleX = d3.scaleLinear().domain([0, maxCount]).range([0, rectWidth / 2 - 1]);
+
+        g.selectAll(".hist-bar")
+            .data(categories.map((cat, idx) => ({ category: cat, count: counts[idx] })))
+            .enter()
+            .append("rect")
+            .attr("x", d => rectWidth / 2 - scaleX(d.count))
+            .attr("y", d => yScale(d.category))
+            .attr("width", d => scaleX(d.count))
+            .attr("height", barHeight)
+            .attr("fill", "#ccc")
+            .attr("stroke", "#000")
+            .attr("stroke-width", 0.5)
+            .on("mouseover", (event, d) => {
+                tooltip.style("visibility", "visible").html(`<strong>Category:</strong> ${d.category}<br><strong>Count:</strong> ${d.count}`);
+            })
+            .on("mousemove", (event) => tooltip.style("top", (event.clientY + 15) + "px").style("left", (event.clientX) + "px"))
+            .on("mouseout", () => tooltip.style("visibility", "hidden"));
+    }
+
+    // 6. Reset with 'R' or 'r' key
+    document.addEventListener("keydown", e => {
+        if (e.key === "r" || e.key === "R") {
+            d3.select("#main-group").selectAll(".feature-block rect").attr("stroke", "black").attr("stroke-width", 1);
+            d3.select("#main-group").selectAll(".missing-bar").attr("fill", "steelblue");
+            d3.select("#main-group").selectAll(".joint-bar").remove();
+            d3.select("#main-group").selectAll(".conditional-bar").remove();
+            d3.select("#main-group").selectAll(".connection-layer path").remove();
+            svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+        }
+    });
+
+    // 7. Functions for JM & CM (creating red bar charts, red histograms and red arcs)
+    function handleSelectFeatureJM(selectedIndex, selectedFeature) {
+        const group = d3.select("#main-group");
+
+        // Reset previous highlights and connections
+        group.selectAll(".feature-block rect").attr("stroke", "black").attr("stroke-width", 1);
+        group.selectAll(".missing-bar").attr("fill", "steelblue");
+        group.selectAll(".joint-bar").remove();
+        group.selectAll(".conditional-bar").remove();
+        group.selectAll(".connection-layer path").remove();
+
+        // Highlight the selected feature (rectangle outline & color of missing bar)
+        group.select(`#feature-${selectedIndex} rect`).attr("stroke", "indianred").attr("stroke-width", 5);
+        group.select(`#feature-${selectedIndex} .missing-bar`).attr("fill", "indianred");
+
+        // Prepare connection layer and scale of thickness
+        let connectionLayer = group.select(".connection-layer");
+        if (connectionLayer.empty()) connectionLayer = group.append("g").attr("class", "connection-layer");
+        const maxJoint = d3.max(selectedFeature.jointMissing);
+        const thicknessScale = d3.scaleLinear().domain([0, maxJoint]).range([1, 10]);
+
+
+        // Loop through all other (unselected) features
+        data.forEach((feature, i) => {
+            if (i === selectedIndex) return;// excluding selected feature
+
+            // Drawing JM Bars (red)
+            const jointCount = selectedFeature.jointMissing[i];
+            if (jointCount > 0) {
+                const jointHeight = rectHeight * (jointCount / totalRows);
+
+                group.select(`#feature-${i}`)
+                    .append("rect")
+                    .attr("class", "joint-bar")
+                    .attr("x", rectWidth / 2)
+                    .attr("y", rectHeight - jointHeight)
+                    .attr("width", rectWidth / 2)
+                    .attr("height", jointHeight)
+                    .attr("fill", "indianred")
+                    .on("mouseover", () => {
+                        tooltip.style("visibility", "visible").html(`<strong>Joint Missing:</strong> ${jointCount}`);
+                    })
+                    .on("mousemove", (event) => tooltip.style("top", (event.pageY + 15) + "px").style("left", (event.pageX) + "px"))
+                    .on("mouseout", () => tooltip.style("visibility", "hidden"));
+
+
+                // Drawing curved red arcs (JM) between selected feature and unselected features
+                const source = selectedFeature._layout;
+                const target = feature._layout;
+
+                const x1 = source.x + rectWidth / 2;
+                const y1 = source.y + rectHeight;
+                const x2 = target.x + rectWidth / 2;
+                const y2 = target.y + rectHeight;
+
+                const path = d3.path();
+                path.moveTo(x1, y1);
+                const arcHeight = Math.abs(x2 - x1) / 3;
+                path.bezierCurveTo(x1, y1 + arcHeight, x2, y2 + arcHeight, x2, y2);
+
+                connectionLayer.append("path")
+                    .attr("d", path.toString())
+                    .attr("stroke", "indianred")
+                    .attr("stroke-width", thicknessScale(jointCount))
+                    .attr("fill", "none")
+                    .attr("opacity", 0.6)
+                    .on("mouseover", () => {
+                        tooltip.style("visibility", "visible").html(`<strong>Joint Missing:</strong> ${jointCount}`);
+                    })
+                    .on("mousemove", (event) => tooltip.style("top", (event.pageY + 15) + "px").style("left", (event.pageX) + "px"))
+                    .on("mouseout", () => tooltip.style("visibility", "hidden"));
+            }
+
+            // Drawing red histograms for other unselected features (numerical)
+            if (feature.type === "numerical" && selectedFeature.conditionedOnMissing?.[feature.name]) {
+                const conditioned = selectedFeature.conditionedOnMissing[feature.name];
+                const thresholds = feature.thresholds;
+                const [minValue, maxValue] = feature.domain;
+                const bins = d3.bin().domain([minValue, maxValue]).thresholds(thresholds)(conditioned);
+                const barHeight = rectHeight / bins.length;
+                const scaleX = d3.scaleLinear().domain([0, feature.grayMaxCount]).range([0, rectWidth / 2 - 1]);
+
+
+                d3.select(`#feature-${i}`)
+                    .selectAll(".conditional-bar")
+                        .data(bins)
+                        .enter()
+                        .append("rect")
+                        .attr("class", "conditional-bar")
+                        .attr("x", d => rectWidth / 2 - scaleX(d.length))
+                        .attr("y", (d, i) => rectHeight - (i + 1) * barHeight)
+                        .attr("width", d => scaleX(d.length))
+                        .attr("height", barHeight)
+                        .attr("fill", "indianred")
+                        .attr("opacity", 0.7)
+                        .on("mouseover", (event, d) => {
+                            tooltip.style("visibility", "visible")
+                                   .html(`<strong>Range:</strong> ${d.x0.toFixed(2)} - ${d.x1.toFixed(2)}<br><strong>Count:</strong> ${d.length}`);
+                        })
+                        .on("mousemove", (event) => {
+                            tooltip.style("top", (event.pageY + 15) + "px")
+                                   .style("left", (event.pageX) + "px");
+                        })
+                        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+
+            // Drawing red histograms for other unselected features (categorical)
+            }else if (feature.type === "categorical" && selectedFeature.conditionedOnMissing?.[feature.name]) {
+                const conditioned = selectedFeature.conditionedOnMissing[feature.name];
+                const categories = Object.keys(feature.categories || {});
+                const yScale = d3.scaleBand()
+                    .domain(categories)
+                    .range([0, rectHeight])
+                    .padding(0.15);
+                const barHeight = yScale.bandwidth();
+                const maxCount = feature.grayMaxCount;
+                const scaleX = d3.scaleLinear()
+                    .domain([0, maxCount])
+                    .range([0, rectWidth / 2 - 1]);
+
+                // Count how many times each category appears when selected feature is missing
+                const conditionedCounts = {};
+                conditioned.forEach(val => {
+                    conditionedCounts[val] = (conditionedCounts[val] || 0) + 1;
+                });
+
+                d3.select(`#feature-${i}`)
+                    .selectAll(".conditional-bar")
+                        .data(categories.map(cat => ({ category: cat, count: conditionedCounts[cat] || 0 })))
+                        .enter()
+                        .append("rect")
+                        .attr("class", "conditional-bar")
+                        .attr("x", d => rectWidth / 2 - scaleX(d.count))
+                        .attr("y", d => yScale(d.category))
+                        .attr("width", d => scaleX(d.count))
+                        .attr("height", barHeight)
+                        .attr("fill", "indianred")
+                        .attr("opacity", 0.7)
+                        .on("mouseover", (event, d) => {
+                            tooltip.style("visibility", "visible")
+                                   .html(`<strong>Category:</strong> ${d.category}<br><strong>Count:</strong> ${d.count}`);
+                        })
+                        .on("mousemove", (event) => {
+                            tooltip.style("top", (event.pageY + 15) + "px")
+                                   .style("left", (event.pageX) + "px");
+                        })
+                        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>
