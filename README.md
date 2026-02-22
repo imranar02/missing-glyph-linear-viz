@@ -1,6 +1,6 @@
 # MissiG (Linear Layout): Interactive Visualization of Multivarite Datasets with Missing Values
 
-The purpose of this visualisation project is to highlight the effectiveness of the novel technique, Missing Glyph for its linear layout by modifying the original design, incorporating interactivity features into the design and conducting usability test on 3 datasets with different number of variables. 
+The purpose of this visualisation project is to highlight the effectiveness of the novel technique, Missing Glyph for its linear layout in representing missingness patterns in multivariate datasets. This project was carried out by modifying the original design, incorporating interactivity features into the design and conducting usability test on 3 datasets with different number of variables. 
 
 ## 🚀 Description
 
@@ -63,4 +63,6 @@ While MissiG with a linear layout is effective at lower dimensions, its interpre
 
 ## 📡 Live Visualization & Project Dissertation
 Click here to view the project: [Home Page](https://imranar02.github.io/missing-glyph-linear-viz/)
+
+For a deep dive into the research and methodology behind this project, you can read my full paper here: [Visualization of Incomplete Data Using the MissiG Visualization](./docs/Visualization%20of%20Incomplete%20Data%20Using%20the%20MissiG%20Visualization.pdf)
 
