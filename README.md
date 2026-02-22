@@ -38,8 +38,29 @@ The purpose of this visualisation project is to highlight the effectiveness of t
 * **JavaScript (ES6+):** Logic for data preprocessing and interaction handling.
 * **HTML5/CSS3:** Responsive container for the visualization dashboard.
 
-## Evaluation & Findings
+## 📊 Evaluation & Findings
 To evaluate the effectiveness of the MissiG visualization, a semi-structured interview was conducted with three university students (User A, B, and C) possessing varying levels of data visualization experience. The participants were asked a series of questions to assess the tool’s interpretability and usability across three datasets of increasing dimensionality: Student Performance (Small), Sleep Health and Lifestyle (Medium), and Kamyr Digester (Large). 
 
-## Live Visualization
-Click here to view the project: [Live Demo](https://imranar02.github.io/missing-glyph-linear-viz/)
+**Key findings: -**
+
+* Participants successfully identified AM patterns across all datasets. However, detection became difficult in the large dataset for features with minimal missingness (e.g. a single missing value) without using zoom or hover functions.
+* JM was the most intuitive pattern. Participants relied heavily on red arcs to identify relationships, especially as dimensionality increased and red bar indicators became too thin to notice.
+* CM was the most complex pattern to interpret. While clear in the small dataset, users struggled with the medium and large datasets due to visual scaling, overlapping conditions, and a lack of domain-specific knowledge.
+* The interface was found to be highly functional, with participants effectively using zooming, panning, and the reset key ('r') to navigate high-dimensional data.
+* Interactive tooltips were deemed essential for confirming observations and distinguishing between features with low vs. zero missingness.
+* In high-dimensional views, the bold outlines of bar charts sometimes obscured subtle visual indicators.
+* Participants noted that using red for histograms (recorded values) caused confusion, as red was strongly associated with missingness indicators (arcs and bars).
+* High-frequency categorical variables were sometimes misinterpreted as numerical variables due to the bin arrangement.
+ 
+## ✅ Participant Feedback & Suggestions
+
+* Adopt a more diverse color scheme and avoid using red for non-missingness data to reduce confusion.
+* Incorporate an on-screen legend to serve as a quick reference for visual encodings.
+* Explore alternative layouts beyond the current linear design to better accommodate extremely high-dimensional datasets.
+
+## 💡 Conclusion
+While MissiG with a linear layout is effective at lower dimensions, its interpretability decreases as dataset dimensionality increases.
+
+## 📡 Live Visualization & Project Dissertation
+Click here to view the project: [Home Page](https://imranar02.github.io/missing-glyph-linear-viz/)
+
